@@ -8,7 +8,22 @@ import java.io.File
 
 
 fun naiveSearch(pattern: String, content: String) : Boolean {
-    val found = false
+    if (pattern.length > content.length) return false;
+
+    var found = false
+
+    for(cIndex in 0 until content.length) {
+
+        for (pIndex in 0 until pattern.length) {
+
+            if (content[cIndex + pIndex] == pattern[cIndex]) {
+
+            }
+
+
+        }
+
+    }
 
 
     return found
@@ -31,9 +46,7 @@ fun main(args  : Array<String>) {
         return;
     }
 
-
-    val algorithm = args[0]
-    val file = File(args[1])
+    val file = File(args[1])goo
     val pattern = args[2]
     val desiredType = args[3]
 
