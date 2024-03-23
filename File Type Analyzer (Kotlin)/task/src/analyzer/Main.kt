@@ -10,23 +10,24 @@ import java.io.File
 fun naiveSearch(pattern: String, content: String) : Boolean {
     if (pattern.length > content.length) return false;
 
-    var found = false
+    var patterFound = false
 
-    for(cIndex in 0 until content.length) {
+    for(cIndex in content.indices) {
 
-        for (pIndex in 0 until pattern.length) {
-
+        for (pIndex in pattern.indices) {
             if (content[cIndex + pIndex] == pattern[cIndex]) {
-
+                if (pIndex == content.lastIndex) {
+                    patterFound = true;
+                    break;
+                }
+            } else {
+                break;
             }
-
-
         }
 
     }
 
-
-    return found
+    return patterFound
 
 }
 
