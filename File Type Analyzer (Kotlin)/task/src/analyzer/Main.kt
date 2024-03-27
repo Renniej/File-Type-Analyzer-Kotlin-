@@ -4,21 +4,18 @@ package analyzer
 import java.io.File
 
 
-
-
-
 fun naiveSearch(pattern: String, content: String) : Boolean {
     if (pattern.length > content.length) return false;
 
     var patterFound = false
 
-    for(cIndex in content.indices) {
+   bothLoops@for(cIndex in content.indices) {
 
         for (pIndex in pattern.indices) {
             if (content[cIndex + pIndex] == pattern[cIndex]) {
                 if (pIndex == content.lastIndex) {
                     patterFound = true;
-                    break;
+                    break@bothLoops;
                 }
             } else {
                 break;
@@ -31,11 +28,80 @@ fun naiveSearch(pattern: String, content: String) : Boolean {
 
 }
 
+fun naivePrefixFunction(string: String) : List<Int> {
+
+}
+
+fun isSuffix(pattern : String, content: String) : Boolean {
+
+    var patternFound = false;
+
+    fullLoop@for (sIndex in content.indices.reversed()) {
+        for (pIndex in pattern.indices.reversed()) {
+            if (content[sIndex - pIndex] == pattern[pIndex]) {
+                if (pIndex == pattern.lastIndex) {
+                    patternFound = true;
+                    break@fullLoop
+                }
+
+            }
+            else {
+                break;
+            }
+        }
+    }
+
+
+    return  patternFound;
+}
+
+fun kmpPrefixFunction(pattern: String) : List<Int> {
+
+    val lps = mutableListOf<Int>();
+    val prefixes = mutableListOf<String>();
+    var lastStr = "";
+
+    for (ch in pattern) {
+        lastStr += ch;
+        prefixes.add(lastStr);
+    }
+
+    for (prefix in prefixes) {
+
+        var length : Int = when {
+            !isSuffix(prefix, pattern) -> 0;
+            prefix.length == 1 -> 0;
+            prefix.length == pattern.length -> 0;
+
+            else -> {
+
+                //find longest border
+
+            }
+        }
+
+
+
+    }
+
+
+
+
+    return lps;
+
+
+}
+
 fun kmpSearch(pattern: String, content : String) : Boolean {
-    val found = false
+    val patterFound = false
 
 
-    return found
+
+
+
+
+
+    return patterFound
 
 }
 
@@ -47,7 +113,7 @@ fun main(args  : Array<String>) {
         return;
     }
 
-    val file = File(args[1])goo
+    val file = File(args[1])
     val pattern = args[2]
     val desiredType = args[3]
 
@@ -58,8 +124,9 @@ fun main(args  : Array<String>) {
     }
 
     when {
-        searchAlgo == null ->println ("${args[3]} is a invalid algorithm. Try again.")
+        searchAlgo == null -> println ("${args[3]} is a invalid algorithm. Try again.")
         !file.exists() -> println("File ${args[0]} does not exist ):")
+
         else -> {
             val fileContents = file.readText()
             val patternFound = searchAlgo(pattern, fileContents)
