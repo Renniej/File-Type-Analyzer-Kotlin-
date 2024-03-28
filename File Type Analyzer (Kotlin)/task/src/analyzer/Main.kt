@@ -2,110 +2,105 @@ package analyzer
 
 
 import java.io.File
+import kotlin.time.Duration
+import kotlin.time.ExperimentalTime
+import kotlin.time.measureTime
 
 
 fun naiveSearch(pattern: String, content: String) : Boolean {
     if (pattern.length > content.length) return false;
 
+
+
     var patterFound = false
+    var p = 0;
+    var c = 0;
 
-   bothLoops@for(cIndex in content.indices) {
+    try {
+        bothLoops@for(cIndex in content.indices) {
 
-        for (pIndex in pattern.indices) {
-            if (content[cIndex + pIndex] == pattern[cIndex]) {
-                if (pIndex == content.lastIndex) {
-                    patterFound = true;
-                    break@bothLoops;
+
+            c = cIndex
+            for (pIndex in pattern.indices) {
+                p = pIndex
+
+
+                if (content[cIndex + pIndex] == pattern[cIndex]) {
+                    if (pIndex == content.lastIndex) {
+                        patterFound = true;
+                        break@bothLoops;
+                    }
+                } else {
+                    break;
                 }
+            }
+
+        }
+    } catch (e : StringIndexOutOfBoundsException) {
+
+        println("pIndex = $p")
+        println("cIndex = $c")
+        println("content = ${content.length}")
+        println("patter = ${pattern.length}")
+        throw e;
+    }
+
+
+
+
+
+    return patterFound
+
+}
+
+
+fun kmpSearch(text: String, pattern: String): Boolean {
+    val lps = computeLPSArray(pattern)
+    var i = 0
+    var j = 0
+    while (i < text.length) {
+        if (pattern[j] == text[i]) {
+            j++
+            i++
+        }
+        if (j == pattern.length) {
+            return true;
+        } else if (i < text.length && pattern[j] != text[i]) {
+            if (j != 0) {
+                j = lps[j - 1]
             } else {
-                break;
-            }
-        }
-
-    }
-
-    return patterFound
-
-}
-
-fun naivePrefixFunction(string: String) : List<Int> {
-
-}
-
-fun isSuffix(pattern : String, content: String) : Boolean {
-
-    var patternFound = false;
-
-    fullLoop@for (sIndex in content.indices.reversed()) {
-        for (pIndex in pattern.indices.reversed()) {
-            if (content[sIndex - pIndex] == pattern[pIndex]) {
-                if (pIndex == pattern.lastIndex) {
-                    patternFound = true;
-                    break@fullLoop
-                }
-
-            }
-            else {
-                break;
+                i++
             }
         }
     }
 
-
-    return  patternFound;
+    return false
 }
 
-fun kmpPrefixFunction(pattern: String) : List<Int> {
-
-    val lps = mutableListOf<Int>();
-    val prefixes = mutableListOf<String>();
-    var lastStr = "";
-
-    for (ch in pattern) {
-        lastStr += ch;
-        prefixes.add(lastStr);
-    }
-
-    for (prefix in prefixes) {
-
-        var length : Int = when {
-            !isSuffix(prefix, pattern) -> 0;
-            prefix.length == 1 -> 0;
-            prefix.length == pattern.length -> 0;
-
-            else -> {
-
-                //find longest border
-
+fun computeLPSArray(pattern: String): IntArray {
+    val lps = IntArray(pattern.length)
+    var len = 0
+    var i = 1
+    lps[0] = 0
+    while (i < pattern.length) {
+        if (pattern[i] == pattern[len]) {
+            len++
+            lps[i] = len
+            i++
+        } else {
+            if (len != 0) {
+                len = lps[len - 1]
+            } else {
+                lps[i] = len
+                i++
             }
         }
-
-
-
     }
-
-
-
-
-    return lps;
-
-
-}
-
-fun kmpSearch(pattern: String, content : String) : Boolean {
-    val patterFound = false
-
-
-
-
-
-
-
-    return patterFound
-
+    return lps
 }
 
 
+@OptIn(ExperimentalTime::class)
 fun main(args  : Array<String>) {
 
     if (args.size < 4) {
@@ -117,7 +112,7 @@ fun main(args  : Array<String>) {
     val pattern = args[2]
     val desiredType = args[3]
 
-    val searchAlgo = when(args[3]) {
+    val searchAlgo = when(args[0]) {
         "--KMP" -> ::kmpSearch
         "--naive" -> ::naiveSearch
         else -> null
@@ -125,12 +120,20 @@ fun main(args  : Array<String>) {
 
     when {
         searchAlgo == null -> println ("${args[3]} is a invalid algorithm. Try again.")
-        !file.exists() -> println("File ${args[0]} does not exist ):")
+        !file.exists() -> println("File ${file.path} does not exist ):")
 
         else -> {
             val fileContents = file.readText()
-            val patternFound = searchAlgo(pattern, fileContents)
+            val patternFound : Boolean;
+
+            val elapsed : Duration =  measureTime {
+                patternFound = searchAlgo(pattern, fileContents)
+            }
+
+
+
             println(if (patternFound) desiredType else "Unknown file type")
+            println("It took ${elapsed.inWholeSeconds} seconds")
         }
 
     }
