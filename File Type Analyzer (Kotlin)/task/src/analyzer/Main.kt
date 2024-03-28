@@ -11,39 +11,30 @@ fun naiveSearch(pattern: String, content: String) : Boolean {
     if (pattern.length > content.length) return false;
 
 
-
     var patterFound = false
-    var p = 0;
-    var c = 0;
 
-    try {
-        bothLoops@for(cIndex in content.indices) {
+    var n = content.length
+    var m = pattern.length
+    var range = 0..(n-m+1)
 
+    for (i in range) {
+        var j = 0
 
-            c = cIndex
-            for (pIndex in pattern.indices) {
-                p = pIndex
-
-
-                if (content[cIndex + pIndex] == pattern[cIndex]) {
-                    if (pIndex == content.lastIndex) {
-                        patterFound = true;
-                        break@bothLoops;
-                    }
-                } else {
-                    break;
-                }
+        while (j < m){
+            if (content[i + j] != pattern[j]) {
+                break
             }
 
+            j += 1
         }
-    } catch (e : StringIndexOutOfBoundsException) {
 
-        println("pIndex = $p")
-        println("cIndex = $c")
-        println("content = ${content.length}")
-        println("patter = ${pattern.length}")
-        throw e;
+        if (j == m) {
+            patterFound = true;
+            break;
+        }
+
     }
+
 
 
 
@@ -54,7 +45,8 @@ fun naiveSearch(pattern: String, content: String) : Boolean {
 }
 
 
-fun kmpSearch(text: String, pattern: String): Boolean {
+fun kmpSearch(pattern: String, text: String): Boolean {
+
     val lps = computeLPSArray(pattern)
     var i = 0
     var j = 0
