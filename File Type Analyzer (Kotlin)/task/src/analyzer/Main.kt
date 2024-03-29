@@ -121,11 +121,13 @@ fun main(args  : Array<String>) {
 
                 threadManager.submit {
 
-
+                    if (file.isFile) {
                         val fileContents = file.readText()
 
                         val patternFound : Boolean   = kmpSearch(pattern, fileContents);
                         println("${file.name}: ${if (patternFound) desiredType else "Unknown file type"}")
+
+                    }
 
 
                 }
