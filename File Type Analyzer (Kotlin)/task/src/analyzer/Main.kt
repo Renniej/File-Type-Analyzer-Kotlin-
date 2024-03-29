@@ -2,7 +2,11 @@ package analyzer
 
 
 import java.io.File
+import java.util.concurrent.Executor
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTime
 
@@ -95,45 +99,49 @@ fun computeLPSArray(pattern: String): IntArray {
 @OptIn(ExperimentalTime::class)
 fun main(args  : Array<String>) {
 
-    if (args.size < 4) {
+    if (args.size < 3) {
         println("Needs 3 arguments.  FileName, pattern, desired file type")
         return;
     }
 
-    val file = File(args[1])
-    val pattern = args[2]
-    val desiredType = args[3]
+    val folder = File(args[0])
+    val pattern = args[1]
+    val desiredType = args[2]
 
-    val searchAlgo = when(args[0]) {
-        "--KMP" -> ::kmpSearch
-        "--naive" -> ::naiveSearch
-        else -> null
-    }
+    val threadManager = Executors.newFixedThreadPool(100);
+
+
 
     when {
-        searchAlgo == null -> println ("${args[3]} is a invalid algorithm. Try again.")
-        !file.exists() -> println("File ${file.path} does not exist ):")
+        (!folder.isDirectory) ->  println("${folder.path} is not a folder")
 
         else -> {
-            val fileContents = file.readText()
-            val patternFound : Boolean;
 
-            val elapsed : Duration =  measureTime {
-                patternFound = searchAlgo(pattern, fileContents)
+            folder.listFiles()?.forEach {file ->
+
+                threadManager.submit {
+
+
+                        val fileContents = file.readText()
+
+                        val patternFound : Boolean   = kmpSearch(pattern, fileContents);
+                        println("${file.name}: ${if (patternFound) desiredType else "Unknown file type"}")
+
+
+                }
+
             }
 
-
-
-            println(if (patternFound) desiredType else "Unknown file type")
-            println("It took ${elapsed.inWholeSeconds} seconds")
         }
-
     }
 
 
-
-
-
-
+    threadManager.awaitTermination(10, TimeUnit.SECONDS);
 
 }
+
+
+
+
+
+
