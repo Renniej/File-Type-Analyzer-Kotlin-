@@ -2,6 +2,9 @@ package analyzer
 
 
 import java.io.File
+import java.util.concurrent.Callable
+import java.util.concurrent.Executor
+import java.util.concurrent.Executors
 import kotlin.time.Duration
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTime
@@ -69,46 +72,46 @@ fun kmpSearch(pattern: String, text: String): Boolean {
     return false
 }
 
-fun computeLPSArray(pattern: String): IntArray {
-    val lps = IntArray(pattern.length)
-    var len = 0
-    var i = 1
-    lps[0] = 0
-    while (i < pattern.length) {
-        if (pattern[i] == pattern[len]) {
-            len++
-            lps[i] = len
-            i++
-        } else {
-            if (len != 0) {
-                len = lps[len - 1]
-            } else {
-                lps[i] = len
-                i++
-            }
-        }
+
+
+fun createPatternObjList(db : File, threadManager : Executor) : List<Pattern> {
+
+    val list = emptyList<Pattern>()
+    val callables = emptyList<Callable<Pattern>>()
+    val entries = db.readLines();
+
+
+    entries.forEach {entry ->
+
+        val priority : Int;
+        val name : String
+        val patternStr : String
+
+        (priority, name, patternStr) = entr
+
     }
-    return lps
+
 }
 
-
-@OptIn(ExperimentalTime::class)
 fun main(args  : Array<String>) {
 
-    if (args.size < 4) {
+    if (args.size < 2) {
         println("Needs 3 arguments.  FileName, pattern, desired file type")
         return;
     }
 
-    val file = File(args[1])
-    val pattern = args[2]
-    val desiredType = args[3]
+    val threadManager = Executors.newFixedThreadPool(100);
+    val filesToCheck = File(args[0]);
+    val patternDB = File(args[1])
 
-    val searchAlgo = when(args[0]) {
-        "--KMP" -> ::kmpSearch
-        "--naive" -> ::naiveSearch
-        else -> null
-    }
+
+    val patternList : List<Pattern> = createPatternObjList(patternDB, threadManager);
+
+
+
+
+
+
 
     when {
         searchAlgo == null -> println ("${args[3]} is a invalid algorithm. Try again.")
