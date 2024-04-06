@@ -2,50 +2,13 @@ package analyzer
 
 
 import java.io.File
-import java.util.concurrent.Callable
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import kotlin.time.Duration
+import kotlin.time.Duration.Companion.seconds
 import kotlin.time.ExperimentalTime
 import kotlin.time.measureTime
-
-
-fun naiveSearch(pattern: String, content: String) : Boolean {
-    if (pattern.length > content.length) return false;
-
-
-    var patterFound = false
-
-    var n = content.length
-    var m = pattern.length
-    var range = 0..(n-m+1)
-
-    for (i in range) {
-        var j = 0
-
-        while (j < m){
-            if (content[i + j] != pattern[j]) {
-                break
-            }
-
-            j += 1
-        }
-
-        if (j == m) {
-            patterFound = true;
-            break;
-        }
-
-    }
-
-
-
-
-
-
-    return patterFound
-
-}
 
 
 fun kmpSearch(pattern: String, text: String): Boolean {
@@ -72,71 +35,82 @@ fun kmpSearch(pattern: String, text: String): Boolean {
     return false
 }
 
-
-
-fun createPatternObjList(db : File, threadManager : Executor) : List<Pattern> {
-
-    val list = emptyList<Pattern>()
-    val callables = emptyList<Callable<Pattern>>()
-    val entries = db.readLines();
-
-
-    entries.forEach {entry ->
-
-        val priority : Int;
-        val name : String
-        val patternStr : String
-
-        (priority, name, patternStr) = entr
-
+fun computeLPSArray(pattern: String): IntArray {
+    val lps = IntArray(pattern.length)
+    var len = 0
+    var i = 1
+    lps[0] = 0
+    while (i < pattern.length) {
+        if (pattern[i] == pattern[len]) {
+            len++
+            lps[i] = len
+            i++
+        } else {
+            if (len != 0) {
+                len = lps[len - 1]
+            } else {
+                lps[i] = len
+                i++
+            }
+        }
     }
-
+    return lps
 }
+
+
 
 fun main(args  : Array<String>) {
 
-    if (args.size < 2) {
+    if (args.size < 3) {
         println("Needs 3 arguments.  FileName, pattern, desired file type")
         return;
     }
 
+    val folder = File(args[0])
+    val pattern = args[1]
+    val desiredType = args[2]
+
     val threadManager = Executors.newFixedThreadPool(100);
-    val filesToCheck = File(args[0]);
-    val patternDB = File(args[1])
-
-
-    val patternList : List<Pattern> = createPatternObjList(patternDB, threadManager);
-
-
-
-
 
 
 
     when {
-        searchAlgo == null -> println ("${args[3]} is a invalid algorithm. Try again.")
-        !file.exists() -> println("File ${file.path} does not exist ):")
+        (!folder.isDirectory) ->  println("${folder.path} is not a folder")
 
         else -> {
-            val fileContents = file.readText()
-            val patternFound : Boolean;
 
-            val elapsed : Duration =  measureTime {
-                patternFound = searchAlgo(pattern, fileContents)
+            folder.listFiles()?.forEach {file ->
+
+                threadManager.submit {
+
+                    if (file.isFile) {
+                        val fileContents = file.readText()
+
+                        val patternFound : Boolean   = kmpSearch(pattern, fileContents);
+                        println("${file.name}: ${if (patternFound) desiredType else "Unknown file type"}")
+
+                    }
+
+
+                }
+
             }
 
-
-
-            println(if (patternFound) desiredType else "Unknown file type")
-            println("It took ${elapsed.inWholeSeconds} seconds")
         }
-
     }
 
 
-
-
-
-
+    threadManager.awaitTermination(10, TimeUnit.SECONDS);
 
 }
+
+>>>>>>> 4c25ab4 (test)
+
+
+
+
+
+<<<<<<< HEAD
+}
+=======
+>>>>>>> 4c25ab4 (test)
