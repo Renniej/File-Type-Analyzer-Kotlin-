@@ -16,6 +16,7 @@ fun kmpSearch(p: Pattern, text: String): Boolean {
     val lps = p.lps
     val pattern = p.pattern
 
+ 
     var i = 0
     var j = 0
     while (i < text.length) {
@@ -41,7 +42,7 @@ fun kmpSearch(p: Pattern, text: String): Boolean {
 fun findMatchingPattern(file : File, patternDB : List<Pattern>, executor: ExecutorService ) {
 
     val searchTasks = mutableListOf<Callable<Any>>();
-    val matchingPatterns = Collections.synchronizedList(mutableListOf<Pattern>())
+    val matchingPatterns = Collections.synchronizedList(mutableListOf<Pattern>())  //create a thread-safe mutable list :)
     var foundPattern : Pattern? = null;
 
 
@@ -50,7 +51,6 @@ fun findMatchingPattern(file : File, patternDB : List<Pattern>, executor: Execut
         searchTasks.add(
                 Callable {
                     if (kmpSearch(pattern, file.readText())) {
-
                         matchingPatterns.add(pattern)
                     }
                 }
@@ -63,6 +63,8 @@ fun findMatchingPattern(file : File, patternDB : List<Pattern>, executor: Execut
 
     if (foundPattern != null) {
         println("${file.name}: ${foundPattern.name}")
+    } else {
+        println("${file.name}: Unknown file type")
     }
 
 
@@ -75,11 +77,9 @@ fun createPatternDB(dbFile : File, executor: ExecutorService) : List<Pattern> {
     val patternDB = mutableListOf<Pattern>()
 
     strDB.forEach {entry : String ->
-
-
         initTasks.add(
                 Callable {
-                    val (priority, patternStr, name) = entry.split(";")
+                    val (priority, patternStr, name) = entry.split(";").map { it.trim('"') }
                     val pattern = Pattern(name, patternStr, priority.toInt())
                     pattern;
                 }
