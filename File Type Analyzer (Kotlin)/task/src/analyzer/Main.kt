@@ -2,18 +2,20 @@ package analyzer
 
 
 import java.io.File
+import java.util.*
+import java.util.concurrent.Callable
 import java.util.concurrent.Executor
+import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
-import kotlin.time.Duration
-import kotlin.time.Duration.Companion.seconds
-import kotlin.time.ExperimentalTime
-import kotlin.time.measureTime
+import kotlin.concurrent.thread
 
 
-fun kmpSearch(pattern: String, text: String): Boolean {
+fun kmpSearch(p: Pattern, text: String): Boolean {
 
-    val lps = computeLPSArray(pattern)
+    val lps = p.lps
+    val pattern = p.pattern
+
     var i = 0
     var j = 0
     while (i < text.length) {
@@ -35,82 +37,89 @@ fun kmpSearch(pattern: String, text: String): Boolean {
     return false
 }
 
-fun computeLPSArray(pattern: String): IntArray {
-    val lps = IntArray(pattern.length)
-    var len = 0
-    var i = 1
-    lps[0] = 0
-    while (i < pattern.length) {
-        if (pattern[i] == pattern[len]) {
-            len++
-            lps[i] = len
-            i++
-        } else {
-            if (len != 0) {
-                len = lps[len - 1]
-            } else {
-                lps[i] = len
-                i++
-            }
-        }
+
+fun findMatchingPattern(file : File, patternDB : List<Pattern>, executor: ExecutorService ) {
+
+    val searchTasks = mutableListOf<Callable<Any>>();
+    val matchingPatterns = Collections.synchronizedList(mutableListOf<Pattern>())
+    var foundPattern : Pattern? = null;
+
+
+    //add any patterns that are found into the file into the matchingPatterns list
+    patternDB.forEach { pattern ->
+        searchTasks.add(
+                Callable {
+                    if (kmpSearch(pattern, file.readText())) {
+
+                        matchingPatterns.add(pattern)
+                    }
+                }
+        )
     }
-    return lps
+
+    executor.invokeAll(searchTasks);
+
+    foundPattern = matchingPatterns.maxByOrNull { it.priority }
+
+    if (foundPattern != null) {
+        println("${file.name}: ${foundPattern.name}")
+    }
+
+
 }
 
+fun createPatternDB(dbFile : File, executor: ExecutorService) : List<Pattern> {
+
+    val strDB = dbFile.readLines();
+    val initTasks = mutableListOf<Callable<Pattern>>()
+    val patternDB = mutableListOf<Pattern>()
+
+    strDB.forEach {entry : String ->
+
+
+        initTasks.add(
+                Callable {
+                    val (priority, patternStr, name) = entry.split(";")
+                    val pattern = Pattern(name, patternStr, priority.toInt())
+                    pattern;
+                }
+        )
+    }
+
+    val results = executor.invokeAll(initTasks)
+
+    for ( pattern in results){
+        patternDB.add(pattern.get());
+    }
+
+
+    return patternDB;
+}
 
 
 fun main(args  : Array<String>) {
 
-    if (args.size < 3) {
-        println("Needs 3 arguments.  FileName, pattern, desired file type")
+    if (args.size < 2) {
+        println("Needs 2 arguments : test files, patterns database")
         return;
     }
 
-    val folder = File(args[0])
-    val pattern = args[1]
-    val desiredType = args[2]
 
+    val testFolder = File(args[0]);
+    val dbFile = File(args[1])
     val threadManager = Executors.newFixedThreadPool(100);
+    val patternDB = createPatternDB(dbFile,threadManager);
 
 
-
-    when {
-        (!folder.isDirectory) ->  println("${folder.path} is not a folder")
-
-        else -> {
-
-            folder.listFiles()?.forEach {file ->
-
-                threadManager.submit {
-
-                    if (file.isFile) {
-                        val fileContents = file.readText()
-
-                        val patternFound : Boolean   = kmpSearch(pattern, fileContents);
-                        println("${file.name}: ${if (patternFound) desiredType else "Unknown file type"}")
-
-                    }
-
-
-                }
-
-            }
-
+    testFolder.listFiles()?.forEach { file ->
+        threadManager.submit {
+            findMatchingPattern(file,patternDB,threadManager)
         }
     }
+
 
 
     threadManager.awaitTermination(10, TimeUnit.SECONDS);
 
 }
 
->>>>>>> 4c25ab4 (test)
-
-
-
-
-
-<<<<<<< HEAD
-}
-=======
->>>>>>> 4c25ab4 (test)
